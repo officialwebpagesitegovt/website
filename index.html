@@ -1,105 +1,210 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Loading...</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>ऑटो फेस डिटेक्शन अटेंडेंस</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .card {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      max-width: 440px;
+      width: 90%;
+      text-align: center;
+    }
+    .viewport-box {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 16px 0;
+      position: relative;
+    }
+    video, img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    video {
+      transform: scaleX(-1);
+    }
+    .scan-guide {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 180px;
+      height: 230px;
+      border: 2px dashed rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .scan-guide.detected {
+      border-color: #22c55e;
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      transition: background 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+    button:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 14px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #475569;
+    }
+  </style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen flex items-center justify-center font-sans antialiased overflow-hidden">
+<body>
 
-  <!-- ================= LOADER SCREEN ================= -->
-  <div id="loader-screen" class="w-full max-w-md p-6 flex flex-col items-center justify-center transition-opacity duration-700">
-    <!-- Animated Badge / Text -->
-    <div class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold tracking-widest uppercase animate-pulse">
-      <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-      System Initializing
+  <div class="card">
+    <h2>उपस्थिति सत्यापन</h2>
+    <p>चेहरा फ्रेम के बीच में रखें, सिस्टम अपने आप डिटेक्ट करके फोटो ले लेगा।</p>
+
+    <div class="viewport-box">
+      <video id="webcam" autoplay playsinline></video>
+      <div id="guide" class="scan-guide"></div>
+      <img id="snapshot" alt="Captured Frame" style="display: none;">
     </div>
 
-    <!-- Percentage Display -->
-    <div class="flex items-baseline justify-center mb-6">
-      <span id="counter" class="text-7xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-indigo-500">
-        0
-      </span>
-      <span class="text-2xl md:text-3xl font-bold text-indigo-400 ml-1">%</span>
+    <canvas id="captureCanvas" style="display: none;"></canvas>
+
+    <div>
+      <button id="startBtn">वेरिफिकेशन शुरू करें</button>
+      <button id="retakeBtn" style="display: none;">दोबारा स्कैन करें</button>
     </div>
 
-    <!-- Progress Bar Track -->
-    <div class="w-full bg-gray-900 border border-gray-800 rounded-full h-3 p-0.5 shadow-inner overflow-hidden relative">
-      <!-- Progress Bar Fill -->
-      <div 
-        id="progress-bar" 
-        class="h-full bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 rounded-full w-0 shadow-lg shadow-indigo-500/40"
-        style="transition: width 0.1s linear;"
-      ></div>
-    </div>
-
-    <!-- Timer / Info text -->
-    <div class="mt-4 flex justify-between w-full text-xs text-gray-500 font-mono">
-      <span>PLEASE WAIT</span>
-      <span id="time-left">60s</span>
-    </div>
+    <div id="status">प्रक्रिया शुरू करने के लिए बटन दबाएं।</div>
   </div>
 
-  <!-- ================= MAIN CONTENT (Loaded after 1 min) ================= -->
-  <div id="main-content" class="hidden opacity-0 transition-opacity duration-1000 flex flex-col items-center text-center p-6 max-w-lg">
-    <div class="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-4 border border-green-500/30">
-      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-      </svg>
-    </div>
-    <h1 class="text-3xl font-extrabold text-white mb-2">Welcome! Site Loaded</h1>
-    <p class="text-gray-400 text-sm">लोडिंग पूरी हो चुकी है। अब आप यहाँ अपना मुख्य कंटेंट डाल सकते हैं।</p>
-  </div>
-
-  <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    const counterElement = document.getElementById('counter');
-    const progressBar = document.getElementById('progress-bar');
-    const timeLeftElement = document.getElementById('time-left');
-    const loaderScreen = document.getElementById('loader-screen');
-    const mainContent = document.getElementById('main-content');
+    const webcam = document.getElementById('webcam');
+    const guide = document.getElementById('guide');
+    const snapshot = document.getElementById('snapshot');
+    const canvas = document.getElementById('captureCanvas');
+    const startBtn = document.getElementById('startBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const statusText = document.getElementById('status');
 
-    const totalDuration = 60 * 1000; // 1 मिनट (60,000 ms)
-    const startTime = performance.now();
+    let stream = null;
+    let detectionLoop = null;
+    let faceDetector = null;
+    let isCapturing = false;
 
-    function updateLoader(currentTime) {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / totalDuration, 1); // 0 से 1 तक वैल्यू
-      
-      const percentage = Math.floor(progress * 100);
-      const remainingSeconds = Math.max(0, Math.ceil((totalDuration - elapsed) / 1000));
+    // ब्राउज़र में FaceDetector सपोर्ट चेक करना
+    if ('FaceDetector' in window) {
+      faceDetector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+    }
 
-      // UI अपडेट करें
-      counterElement.innerText = percentage;
-      progressBar.style.width = `${progress * 100}%`;
-      timeLeftElement.innerText = `${remainingSeconds}s`;
+    async function initCamera() {
+      try {
+        statusText.innerText = "कैमरा लोड हो रहा है...";
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
 
-      if (progress < 1) {
-        requestAnimationFrame(updateLoader);
-      } else {
-        // 100% पूरा होने पर
-        counterElement.innerText = 100;
-        progressBar.style.width = '100%';
-        timeLeftElement.innerText = '0s';
+        webcam.srcObject = stream;
+        webcam.style.display = "block";
+        guide.style.display = "block";
+        guide.classList.remove('detected');
+        snapshot.style.display = "none";
+        startBtn.style.display = "none";
+        retakeBtn.style.display = "none";
+        isCapturing = false;
 
-        // स्मूथ ट्रांज़िशन मेन पेज पर
-        setTimeout(() => {
-          loaderScreen.classList.add('opacity-0');
-          setTimeout(() => {
-            loaderScreen.classList.add('hidden');
-            mainContent.classList.remove('hidden');
-            setTimeout(() => {
-              mainContent.classList.remove('opacity-0');
-            }, 50);
-          }, 700);
-        }, 300);
+        statusText.innerText = "चेहरा फ्रेम में लाएं...";
+        startDetection();
+      } catch (err) {
+        statusText.innerText = "कैमरा एक्सेस त्रुटि: कृपया अनुमति की जांच करें।";
       }
     }
 
-    // लोडर शुरू करें
-    requestAnimationFrame(updateLoader);
+    function startDetection() {
+      if (!faceDetector) {
+        // अगर ब्राउज़र FaceDetector API सपोर्ट न करे तो 3 सेकंड बाद ऑटो-क्लिक
+        statusText.innerText = "ऑटो-डिटेक्टर अनुपलब्ध: 3 सेकंड में कैप्चर हो रहा है...";
+        setTimeout(capturePhoto, 3000);
+        return;
+      }
+
+      detectionLoop = setInterval(async () => {
+        if (webcam.readyState === 4 && !isCapturing) {
+          try {
+            const faces = await faceDetector.detect(webcam);
+            if (faces.length > 0) {
+              guide.classList.add('detected');
+              statusText.innerText = "चेहरा डिटेक्ट हुआ! स्थिर रहें...";
+              isCapturing = true;
+              clearInterval(detectionLoop);
+              
+              // 600ms का छोटा पॉज ताकि फोटो स्थिर आए
+              setTimeout(capturePhoto, 600);
+            }
+          } catch (e) {
+            console.error("डिटेक्शन एरर:", e);
+          }
+        }
+      }, 250);
+    }
+
+    function capturePhoto() {
+      canvas.width = webcam.videoWidth;
+      canvas.height = webcam.videoHeight;
+      const ctx = canvas.getContext('2d');
+
+      // सेल्फी मिरर एडजस्टमेंट
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+
+      // कैमरा हार्डवेयर तुरंत बंद करना
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        webcam.srcObject = null;
+      }
+
+      const imgUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      webcam.style.display = "none";
+      guide.style.display = "none";
+      snapshot.src = imgUrl;
+      snapshot.style.display = "block";
+
+      statusText.innerText = "फोटो सफलतापूर्वक कैप्चर हो गई!";
+      retakeBtn.style.display = "inline-block";
+    }
+
+    startBtn.addEventListener('click', initCamera);
+    retakeBtn.addEventListener('click', initCamera);
   </script>
 </body>
 </html>
